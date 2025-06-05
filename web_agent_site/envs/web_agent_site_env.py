@@ -40,8 +40,6 @@ class WebAgentSiteEnv(gym.Env):
         headless = not kwargs.get('render', False)
         self.browser = self._playwright.chromium.launch(headless=headless)
         self.page = self.browser.new_page()
-        # Optionally, wait for the server to be up
-        time.sleep(2)
         # Set flags and values for WebShop session
         self.text_to_clickable = None
         self.assigned_session = kwargs.get('session')
@@ -61,7 +59,7 @@ class WebAgentSiteEnv(gym.Env):
         reward = 0.0
         done = False
         info = None
-
+        #print("action", action)
         action_name, action_arg = parse_action(action)
         if action_name == 'search':
             try:
@@ -75,10 +73,11 @@ class WebAgentSiteEnv(gym.Env):
             try:
                 element = self.text_to_clickable[action_arg]
                 try:
-                    element.click()
-                except Exception:
-                    # Fallback: force click via JS
-                    self.page.evaluate("el => el.click()", element)
+                    #print("element", element)
+                    element.click(force=True)
+                except Exception as e:
+                    #print("error", e)
+                    self.page.evaluate("el => el.click()", element, force=True)
             except Exception:
                 pass
             reward = self.get_reward()
@@ -91,6 +90,7 @@ class WebAgentSiteEnv(gym.Env):
 
         if 'pause' in self.kwargs:
             time.sleep(self.kwargs['pause'])
+        self.page.wait_for_load_state("networkidle")
         return self.observation, reward, done, info
 
     def get_available_actions(self):
@@ -186,18 +186,18 @@ class WebAgentSiteEnv(gym.Env):
         and always includes a rendered image from the browser as a PIL Image.
         Returns a dict with keys: 'observation', 'image'.
         """
-        html = self.state['html']
+        # html = self.state['html']
         image = self.state['image']
-        if self.observation_mode == 'html':
-            obs = html
-        elif self.observation_mode == 'text':
-            obs = self.convert_html_to_text(html)
-        else:
-            raise ValueError(
-                f'Observation mode {self.observation_mode} not supported.'
-            )
+        # if self.observation_mode == 'html':
+        #     obs = html
+        # elif self.observation_mode == 'text':
+        #     obs = self.convert_html_to_text(html)
+        # else:
+        #     raise ValueError(
+        #         f'Observation mode {self.observation_mode} not supported.'
+        #     )
         return {
-            'observation': obs,
+            #'observation': obs,
             'image': image
         }
 

@@ -26,19 +26,22 @@ if __name__ == '__main__':
     
     try:
         #policy = HumanPolicy()
+        _ = env.seed(42)
         policy = RandomPolicy()
         info = env.reset()
         observation = env.observation
+        i = 0
         while True:
+            i += 1
             # print(observation)
             available_actions = env.get_available_actions()
             print('Available actions:', available_actions)
-            time.sleep(10)
             action = policy.forward(observation, available_actions)
+            # print("action", action)
             observation, reward, done, info = env.step(action)
             print(observation.keys(), reward, done, info)
-            print(f'Taking action "{escape(action)}" -> Reward = {reward}')
-            time.sleep(5)
+            print(f'{i}: Taking action "{escape(action)}" -> Reward = {reward}')
+            time.sleep(3)
             if done:
                 break
             global_step += 1

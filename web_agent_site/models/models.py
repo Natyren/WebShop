@@ -45,8 +45,10 @@ class RandomPolicy(BasePolicy):
     
     def forward(self, observation, available_actions):
         if available_actions['has_search_bar']:
-            action = 'search[shoes]'
+            action = 'search[jacket coat]'
         else:
             action_arg = random.choice(available_actions['clickables'])
-            action = f'click[{action_arg}]'
+            print("action_arg", action_arg)
+            action = f"click[{action_arg}]"
+            print("action", action)
         return action

@@ -1,5 +1,5 @@
 beautifulsoup4==4.11.1
-cleantext==1.1.4
+cleantext
 env==0.1.0
 numpy
 pandas==1.4.2

@@ -1,10 +1,9 @@
 beautifulsoup4==4.11.1
 cleantext==1.1.4
 env==0.1.0
-Flask==3.0.3
 numpy
 pandas==1.4.2
-pyserini==1.0.0
+pyserini==0.44.0
 PyYAML==6.0
 rank_bm25==0.2.2
 requests==2.27.1

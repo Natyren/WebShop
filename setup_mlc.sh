@@ -23,15 +23,16 @@
 
 # Install Python Dependencies
 conda install spacy
-pip install -r requirements.txt;
 
 # Install Environment Dependencies via `conda`
-conda install -c pytorch faiss-cpu;
-conda install -c conda-forge openjdk=11;
+conda install -y -c pytorch faiss-cpu;
+conda install -y -c conda-forge openjdk=11;
+
+pip install -r requirements_updated.txt;
 
 # Download dataset into `data` folder via `gdown` command
-mkdir -p data;
-cp -r SOURCE_DATA_FOLDER/* data/
+# mkdir -p data;
+# cp -r SOURCE_DATA_FOLDER/* data/
 # Download spaCy large NLP model
 python -m spacy download en_core_web_sm
 

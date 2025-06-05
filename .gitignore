@@ -8,7 +8,10 @@
 .vscode/
 
 __pycache__/
-data/
+data/*
+!data/items_human_ins.json
+!data/items_ins_v2_1000.json
+!data/items_shuffle_1000.json
 search_engine/indexes*
 search_engine/resources*
 transfer/flagged

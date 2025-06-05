@@ -22,7 +22,7 @@
 # fi
 
 # Install Python Dependencies
-conda install spacy
+conda install -y spacy
 
 # Install Environment Dependencies via `conda`
 conda install -y -c pytorch faiss-cpu;

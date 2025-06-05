@@ -3,17 +3,18 @@ import random
 import requests
 import string
 import time
+import io
+import base64
 
 from bs4 import BeautifulSoup
 from bs4.element import Comment
 from gym import spaces
-from os.path import join, dirname, abspath
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.keys import Keys
-from selenium.common.exceptions import ElementNotInteractableException
+
+from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
+
 from web_agent_site.engine.engine import parse_action, END_BUTTON
+
+from PIL import Image  # Added for PIL image wrapping
 
 class WebAgentSiteEnv(gym.Env):
     """Gym environment for HTML mode of WebShop environment"""
@@ -34,13 +35,13 @@ class WebAgentSiteEnv(gym.Env):
         self.observation_mode = observation_mode
         self.kwargs = kwargs
 
-        # Create a browser driver to simulate the WebShop site
-        service = Service(join(dirname(abspath(__file__)), 'chromedriver'))
-        options = Options()
-        if 'render' not in kwargs or not kwargs['render']:
-            options.add_argument("--headless")  # don't show browser
-        self.browser = webdriver.Chrome(service=service, options=options)
-
+        # Start Playwright and launch browser
+        self._playwright = sync_playwright().start()
+        headless = not kwargs.get('render', False)
+        self.browser = self._playwright.chromium.launch(headless=headless)
+        self.page = self.browser.new_page()
+        # Optionally, wait for the server to be up
+        time.sleep(2)
         # Set flags and values for WebShop session
         self.text_to_clickable = None
         self.assigned_session = kwargs.get('session')
@@ -61,23 +62,25 @@ class WebAgentSiteEnv(gym.Env):
         done = False
         info = None
 
-        # Map action to executed command on the WebShop environment via the broswer driver
         action_name, action_arg = parse_action(action)
         if action_name == 'search':
             try:
-                search_bar = self.browser.find_element_by_id('search_input')
-            except Exception:
-                pass
-            else:
-                search_bar.send_keys(action_arg)
-                search_bar.submit()
+                search_bar = self.page.query_selector("#search_input")
+            except PlaywrightTimeoutError:
+                search_bar = None
+            if search_bar is not None:
+                search_bar.fill(action_arg)
+                search_bar.press("Enter")
         elif action_name == 'click':
             try:
-                self.text_to_clickable[action_arg].click()
-            except ElementNotInteractableException:
-                # Perform force click with JavaScript
-                button = self.text_to_clickable[action_arg]
-                self.browser.execute_script("arguments[0].click();", button)
+                element = self.text_to_clickable[action_arg]
+                try:
+                    element.click()
+                except Exception:
+                    # Fallback: force click via JS
+                    self.page.evaluate("el => el.click()", element)
+            except Exception:
+                pass
             reward = self.get_reward()
             if action_arg == END_BUTTON:
                 done = True
@@ -89,29 +92,30 @@ class WebAgentSiteEnv(gym.Env):
         if 'pause' in self.kwargs:
             time.sleep(self.kwargs['pause'])
         return self.observation, reward, done, info
-    
+
     def get_available_actions(self):
         """Returns list of available actions at the current step"""
         # Determine if a search bar is available
         try:
-            search_bar = self.browser.find_element_by_id('search_input')
+            search_bar = self.page.query_selector("#search_input")
+            has_search_bar = search_bar is not None
         except Exception:
             has_search_bar = False
-        else:
-            has_search_bar = True
 
         # Collect buttons, links, and options as clickables
-        buttons = self.browser.find_elements_by_class_name('btn')
-        product_links = self.browser.find_elements_by_class_name('product-link')
-        buying_options = self.browser.find_elements_by_css_selector("input[type='radio']")
+        buttons = self.page.query_selector_all(".btn")
+        product_links = self.page.query_selector_all(".product-link")
+        buying_options = self.page.query_selector_all("input[type='radio']")
 
-        self.text_to_clickable = {
-            f'{b.text}': b
-            for b in buttons + product_links
-        }
+        self.text_to_clickable = {}
+        for b in buttons + product_links:
+            text = b.inner_text().strip()
+            if text:
+                self.text_to_clickable[text] = b
         for opt in buying_options:
             opt_value = opt.get_attribute('value')
-            self.text_to_clickable[f'{opt_value}'] = opt
+            if opt_value:
+                self.text_to_clickable[opt_value] = opt
         return dict(
             has_search_bar=has_search_bar,
             clickables=list(self.text_to_clickable.keys()),
@@ -127,7 +131,7 @@ class WebAgentSiteEnv(gym.Env):
         """
         if html is None:
             if url is not None:
-                html = requests.get(url)
+                html = requests.get(url).text
             else:
                 html = self.state['html']
         html_obj = BeautifulSoup(html, 'html.parser')
@@ -139,20 +143,29 @@ class WebAgentSiteEnv(gym.Env):
         r = html_obj.find(id='reward')
         r = float(r.findChildren("pre")[0].string) if r is not None else 0.0
         return r
-    
+
     def get_instruction_text(self):
         """Get corresponding instruction text for environment current step"""
-        html_obj = self._parse_html(self.browser.page_source)
+        html_obj = self._parse_html(self.page.content())
         instruction_text = html_obj.find(id='instruction-text').h4.text
         return instruction_text
-    
+
     def convert_html_to_text(self, html):
         """Strip HTML of tags and add separators to convert observation into simple mode"""
         texts = self._parse_html(html).findAll(text=True)
         visible_texts = filter(tag_visible, texts)
         observation = ' [SEP] '.join(t.strip() for t in visible_texts if t != '\n')
         return observation
-    
+
+    def _get_rendered_image(self):
+        """
+        Capture a screenshot of the current browser page and return as a PIL Image.
+        """
+        # Playwright's screenshot returns bytes
+        img_bytes = self.page.screenshot(full_page=True)
+        img_pil = Image.open(io.BytesIO(img_bytes))
+        return img_pil
+
     @property
     def state(self):
         """
@@ -160,23 +173,33 @@ class WebAgentSiteEnv(gym.Env):
         likely to be a subset or reduced form of the state.
         """
         return dict(
-            url=self.browser.current_url,
-            html=self.browser.page_source,
+            url=self.page.url,
+            html=self.page.content(),
             instruction_text=self.instruction_text,
+            image=self._get_rendered_image(),
         )
-    
+
     @property
     def observation(self):
-        """Compiles state into either the `html` or `text` observation mode"""
+        """
+        Compiles state into either the `html` or `text` observation mode,
+        and always includes a rendered image from the browser as a PIL Image.
+        Returns a dict with keys: 'observation', 'image'.
+        """
         html = self.state['html']
+        image = self.state['image']
         if self.observation_mode == 'html':
-            return html
+            obs = html
         elif self.observation_mode == 'text':
-            return self.convert_html_to_text(html)
+            obs = self.convert_html_to_text(html)
         else:
             raise ValueError(
                 f'Observation mode {self.observation_mode} not supported.'
             )
+        return {
+            'observation': obs,
+            'image': image
+        }
 
     @property
     def action_space(self):
@@ -193,11 +216,10 @@ class WebAgentSiteEnv(gym.Env):
             self.session = self.assigned_session
         else:
             self.session = ''.join(random.choices(string.ascii_lowercase, k=5))
+        print(f'Session: {self.session}')
         init_url = f'http://127.0.0.1:3000/{self.session}'
-        self.browser.get(init_url)
-
+        self.page.goto(init_url, wait_until="domcontentloaded")
         self.instruction_text = self.get_instruction_text()
-
         return self.observation, None
 
     def render(self, mode='human'):
@@ -206,7 +228,9 @@ class WebAgentSiteEnv(gym.Env):
 
     def close(self):
         # TODO: When DB used instead of JSONs, tear down DB here
+        self.page.close()
         self.browser.close()
+        self._playwright.stop()
         print('Browser closed.')
 
 def tag_visible(element):

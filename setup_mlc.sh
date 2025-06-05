@@ -30,7 +30,7 @@ echo "deb [trusted=yes] http://apt-proxy.tcsbank.ru/repository/apt-ubuntu/ focal
 apt update && apt install -y openjdk-11-jdk
 
 pip3 uninstall -y lmms-eval
-conda install -y spacy=3.4.0
+conda install -y spacy
 
 # Install Environment Dependencies via `conda`
 conda install -y -c pytorch faiss-cpu;

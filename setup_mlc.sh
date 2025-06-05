@@ -27,14 +27,14 @@ echo "deb [trusted=yes] http://apt-proxy.tcsbank.ru/repository/apt-ubuntu/ focal
     && echo "deb [trusted=yes] http://apt-proxy.tcsbank.ru/repository/apt-ubuntu/ focal-backports main restricted universe multiverse" >> /etc/apt/sources.list \
     && echo "deb [trusted=yes] http://apt-proxy.tcsbank.ru/repository/apt-ubuntu/ focal-security main restricted universe multiverse" >> /etc/apt/sources.list 
 
-apt update && apt install -y openjdk-11-jdk
+apt update && apt install -y openjdk-16-jdk
 
 pip3 uninstall -y lmms-eval
 conda install -y spacy
 
 # Install Environment Dependencies via `conda`
 conda install -y -c pytorch faiss-cpu;
-conda install -y -c conda-forge openjdk=11;
+conda install -y -c conda-forge openjdk=16;
 
 pip install -r requirements_updated.txt;
 

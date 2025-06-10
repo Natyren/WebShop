@@ -5,7 +5,7 @@ import random
 from os.path import dirname, abspath, join
 
 BASE_DIR = dirname(abspath(__file__))
-DEBUG_PROD_SIZE = None  # set to `None` to disable
+DEBUG_PROD_SIZE = 100000  # set to `None` to disable
 
 DEFAULT_ATTR_PATH = join(BASE_DIR, '../data/items_ins_v2.json')
 DEFAULT_FILE_PATH = join(BASE_DIR, '../data/items_shuffle.json')

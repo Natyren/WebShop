@@ -156,8 +156,11 @@ class WebAgentSiteEnv(gym.Env):
 
     def get_instruction_text(self):
         """Get corresponding instruction text for environment current step"""
-        html_obj = self._parse_html(self.page.content())
-        instruction_text = html_obj.find(id='instruction-text').h4.text
+        try:
+            html_obj = self._parse_html(self.page.content())
+            instruction_text = html_obj.find(id='instruction-text').h4.text
+        except Exception:
+            instruction_text = "No instruction text on current page. You can explore website."
         return instruction_text
 
     def convert_html_to_text(self, html):

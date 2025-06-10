@@ -26,7 +26,7 @@ from web_agent_site.utils import (
 TEMPLATE_DIR = os.path.join(BASE_DIR, 'templates')
 
 SEARCH_RETURN_N = 50
-PRODUCT_WINDOW = 5
+PRODUCT_WINDOW = 4
 TOP_K_ATTR = 10
 
 END_BUTTON = 'Buy Now'

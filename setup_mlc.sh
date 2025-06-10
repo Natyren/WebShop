@@ -37,6 +37,7 @@ conda install -y -c pytorch faiss-cpu;
 conda install -y -c conda-forge openjdk=21;
 
 pip install -r requirements_updated.txt;
+cp /workspace/RL4VLM/VLM_PPO_miniworld/prepared_data/items_ins_v2.json /workspace/RL4VLM/VLM_PPO_miniworld/prepared_data/items_shuffle.json /workspace/RL4VLM/VLM_PPO_miniworld/WebShop/data/
 
 # Download dataset into `data` folder via `gdown` command
 # mkdir -p data;

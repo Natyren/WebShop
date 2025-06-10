@@ -236,7 +236,7 @@ class WebAgentSiteEnv(gym.Env):
             self.session = ''.join(random.choices(string.ascii_lowercase, k=5))
         print(f'Session: {self.session}')
         init_url = f'http://127.0.0.1:3000/{self.session}'
-        self.page.goto(init_url, wait_until="domcontentloaded")
+        self.page.goto(init_url, wait_until="domcontentloaded", timeout=300000)
         self.instruction_text = self.get_instruction_text()
         return self.observation, None
 

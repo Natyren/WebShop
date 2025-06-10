@@ -6,7 +6,7 @@ TODO: move to testing dir for more rigorous tests
 import gym
 from rich import print
 from rich.markup import escape
-
+from collections import defaultdict
 from web_agent_site.envs import WebAgentSiteEnv
 from web_agent_site.models import (
     HumanPolicy,
@@ -39,31 +39,36 @@ if __name__ == '__main__':
         info = env.reset()
         observation = env.observation
         i = 0
-        
-        while global_step < 40:
-            i += 1
-            # print(observation)
-            available_actions = env.get_available_actions()
-            print('Available actions:', available_actions)
-            action = policy.forward(observation, available_actions)
+        instructions_counter = defaultdict(int)
+        for i in range(1000):
+            # i += 1
+            # # print(observation)
+            # available_actions = env.get_available_actions()
+            # print('Available actions:', available_actions)
+            # action = policy.forward(observation, available_actions)
+            # # print("action", action)
             # print("action", action)
-            print("action", action)
-            observation, reward, done, info = env.step(action)
+            # observation, reward, done, info = env.step(action)
 
-            # Resize and save the image
-            img = observation.get("image", None)
-            if img is not None and isinstance(img, Image.Image):
-                w, h = img.size
-                resized_img = img.resize((round(w / 2.5), round(h / 2.5)))
-                img_filename = os.path.join(resized_dir, f"step_{global_step:04d}.png")
-                resized_img.save(img_filename)
+            # # Resize and save the image
+            # img = observation.get("image", None)
+            # if img is not None and isinstance(img, Image.Image):
+            #     w, h = img.size
+            #     resized_img = img.resize((round(w / 2.5), round(h / 2.5)))
+            #     img_filename = os.path.join(resized_dir, f"step_{global_step:04d}.png")
+            #     resized_img.save(img_filename)
             
-            print(observation.keys(), reward, done, info)
-            print(f'{i}: Taking action "{escape(action)}" -> Reward = {reward}')
-            print("")
-            if done:
-                env_seed += 1
-                env.reset()
-            global_step += 1
+            # print(observation.keys(), reward, done, info)
+            # print(f'{i}: Taking action "{escape(action)}" -> Reward = {reward}')
+            # print("")
+            # if done:
+            #     env_seed += 1
+            #     env.reset()
+            # global_step += 1
+
+            env.reset()
+            instructions_counter[env.instruction_text] += 1
+
     finally:
         env.close()
+    print(instructions_counter)

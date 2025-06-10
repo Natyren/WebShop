@@ -38,25 +38,17 @@ class WebAgentSiteEnv(gym.Env):
         # Start Playwright and launch browser
         self._playwright = sync_playwright().start()
         headless = not kwargs.get('render', False)
-        # launch_args = [
-        #     '--no-sandbox',
-        #     '--disable-setuid-sandbox',
-        #     '--disable-dev-shm-usage',
-        #     '--disable-web-security',
-        #     '--disable-features=VizDisplayCompositor',
-        #     '--disable-extensions',
-        #     '--disable-plugins',
-        #     '--disable-javascript',  # Disable JS if not needed for navigation
-        #     '--disable-gpu',
-        #     '--no-first-run',
-        #     '--no-default-browser-check',
-        #     '--disable-default-apps',
-        #     '--disable-background-timer-throttling',
-        #     '--disable-backgrounding-occluded-windows',
-        #     '--disable-renderer-backgrounding',
-        #     '--disable-ipc-flooding-protection',
-        # ]
-        self.browser = self._playwright.chromium.launch(headless=headless)#, args=launch_args)
+        launch_args = [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-web-security',
+            '--disable-extensions',
+            '--disable-plugins',
+            '--disable-javascript',  # Disable JS if not needed for navigation
+            '--disable-gpu'
+        ]
+        self.browser = self._playwright.chromium.launch(headless=headless, args=launch_args)
         self.page = self.browser.new_page()
         # Set flags and values for WebShop session
         self.text_to_clickable = None
